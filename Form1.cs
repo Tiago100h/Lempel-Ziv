@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -135,7 +135,7 @@ namespace Lempel_Ziv
                     j += 8;
                 }
 
-                // Último byte
+                // Adicionando zeros a esquerda do último bit para converter em byte, se necessário, e adicionando último byte referente a quantidade de zeros adicionados
                 if(j + 8 == zerosEum.Length)
                 {
                     bytes.Add(Convert.ToByte(0));
@@ -164,14 +164,22 @@ namespace Lempel_Ziv
                 // Lendo arquivo
                 var arquivo = System.IO.File.ReadAllBytes(ofd.FileName);
 
-                // Verificando quantidade de zeros adicionados na conversão
+                // Verificando quantidade de zeros adicionados na compactação
                 var zerosAdicionados = Convert.ToInt32(arquivo.Last());
 
                 // Removendo último byte
                 var bytes = arquivo.ToList();
                 bytes.Remove(bytes.Last());
 
-                // Convertendo bytes em bits
+                // Convertendo bytes em blocos de 8 bits
+                var bits = string.Empty;
+                foreach (var b in bytes)
+                {
+                    bits += Convert.ToString(b, 2).PadLeft(8, '0');
+                }
+
+                // Removendo zeros adicionados na compactação
+                bits = bits.Remove(bits.Length - 1 - 8, zerosAdicionados);
 
             }
         }
