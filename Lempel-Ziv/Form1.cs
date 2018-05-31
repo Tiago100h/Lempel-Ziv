@@ -31,6 +31,8 @@ namespace Lempel_Ziv
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
+                var tamanhoInicial = new System.IO.FileInfo(ofd.FileName).Length;
+
                 // Lendo arquivo
                 string arquivo;
                 using (var sr = new System.IO.StreamReader(ofd.FileName))
@@ -151,10 +153,11 @@ namespace Lempel_Ziv
                 var arquivoRetorno = ofd.FileName + ".lz";
                 System.IO.File.WriteAllBytes(arquivoRetorno, bytes.ToArray());
 
-                MessageBox.Show("Arquivo gerado:" + Environment.NewLine + arquivoRetorno);
+                var tamanhoFinal = new System.IO.FileInfo(arquivoRetorno).Length;
+                MessageBox.Show("Taxa de compressão: " + (decimal.Divide(tamanhoFinal, tamanhoInicial) * 100).ToString("0.00") + "%");
             }
         }
-
+        
         private void Descompactar_Click(object sender, EventArgs e)
         {
             var ofd = new OpenFileDialog();
@@ -180,6 +183,14 @@ namespace Lempel_Ziv
 
                 // Removendo zeros adicionados na compactação
                 bits = bits.Remove(bits.Length - 1 - 8, zerosAdicionados);
+
+                Contador = 0;
+
+                // Criando o dicionário e adicionando o simbolo vazio
+                var dicionario = new List<Dicionario>
+                {
+                    new Dicionario { PalavraCodigo = ContadorBinario, Sequencia = "" }
+                };
 
             }
         }
