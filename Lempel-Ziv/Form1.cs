@@ -20,8 +20,13 @@ namespace Lempel_Ziv
             {
                 return Convert.ToString(Contador, 2);
             }
-        }        
+        }
 
+        /// <summary>
+        /// Compacta o arquivo .txt escolhido
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Compactar_Click(object sender, EventArgs e)
         {
             var ofd = new OpenFileDialog
@@ -138,7 +143,7 @@ namespace Lempel_Ziv
                 }
 
                 // Adicionando zeros a esquerda do último bit para converter em byte, se necessário, e adicionando último byte referente a quantidade de zeros adicionados
-                if(j + 8 == zerosEum.Length)
+                if (j + 8 == zerosEum.Length)
                 {
                     bytes.Add(Convert.ToByte(0));
                 }
@@ -157,10 +162,18 @@ namespace Lempel_Ziv
                 MessageBox.Show("Taxa de compressão: " + (decimal.Divide(tamanhoFinal, tamanhoInicial) * 100).ToString("0.00") + "%");
             }
         }
-        
+
+        /// <summary>
+        /// Descompacta o arquivo .txt.lz escolhido
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Descompactar_Click(object sender, EventArgs e)
         {
-            var ofd = new OpenFileDialog();
+            var ofd = new OpenFileDialog
+            {
+                Filter = "Arquivos Lempel-Ziv|*.lz"
+            };
 
             if (ofd.ShowDialog() == DialogResult.OK)
             {
@@ -182,9 +195,14 @@ namespace Lempel_Ziv
                 }
 
                 // Removendo zeros adicionados na compactação
-                bits = bits.Remove(bits.Length - 1 - 8, zerosAdicionados);
+                bits = bits.Remove(bits.Length - 8, zerosAdicionados);
 
+                // Variáveis para controlar o loop e o dicionário
                 Contador = 0;
+                var indice = 0;
+                var tamanho = 8;
+                var sequenciaNova = string.Empty;
+                var bytesConvertidos = new List<byte>();
 
                 // Criando o dicionário e adicionando o simbolo vazio
                 var dicionario = new List<Dicionario>
@@ -192,6 +210,55 @@ namespace Lempel_Ziv
                     new Dicionario { PalavraCodigo = ContadorBinario, Sequencia = "" }
                 };
 
+                // Percorrendo os bits
+                while (indice < bits.Length)
+                {
+                    // Primeiro símbolo
+                    if (dicionario.Count == 1)
+                    {
+                        sequenciaNova = bits.Substring(indice, tamanho);
+                        Contador++;
+                        dicionario.Add(new Dicionario { Sequencia = sequenciaNova, PalavraCodigo = ContadorBinario });
+                        bytesConvertidos.Add(Convert.ToByte(sequenciaNova, 2));
+                        indice += tamanho;
+                    }
+                    else
+                    {
+                        tamanho = dicionario.Last().PalavraCodigo.Length;
+                        var palavraCodigo = bits.Substring(indice, tamanho);
+
+                        // Removendo zeros a esquerda da palavra-código
+                        palavraCodigo = palavraCodigo.TrimStart(new Char[] { '0' });
+
+                        var sequenciaDicionario = string.Empty;
+                        if (palavraCodigo.Length > 0)
+                        {
+                            sequenciaDicionario = dicionario.Find(d => d.PalavraCodigo == palavraCodigo).Sequencia;
+                            for (int i = 0; i < sequenciaDicionario.Length; i+=8)
+                            {
+                                bytesConvertidos.Add(Convert.ToByte(sequenciaDicionario.Substring(i, 8), 2));
+                            }
+                        }
+                        indice += tamanho;
+                        tamanho = 8;
+                        if (indice + tamanho <= bits.Length)
+                        {
+                            sequenciaNova = bits.Substring(indice, tamanho);
+                            Contador++;
+                            dicionario.Add(new Dicionario { Sequencia = string.Concat(sequenciaDicionario, sequenciaNova), PalavraCodigo = ContadorBinario });
+                            bytesConvertidos.Add(Convert.ToByte(sequenciaNova, 2));
+                        }
+                        indice += tamanho;
+                    }
+                }
+
+                // Convertendo bits em string
+                var retorno = System.Text.Encoding.ASCII.GetString(bytesConvertidos.ToArray());
+
+                // Gerando arquivo
+                var arquivoRetorno = ofd.FileName + ".txt";
+                System.IO.File.WriteAllText(arquivoRetorno, retorno);
+                MessageBox.Show("Arquivo descompactado:" + Environment.NewLine + arquivoRetorno);
             }
         }
     }
